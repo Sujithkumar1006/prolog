@@ -194,8 +194,6 @@ test(unbound_key, [nondet]) :-
 % *Hints*: Use assoc_lookup/3 from your answer to the previous
 % exercise and Prolog's built-ins atom(A) which succeeds if A is an
 % atom and integer(I) which succeeds if I is an integer.
-
-
 assoc_replace([], _Assoc, []).
 assoc_replace([Head|Tail], Assoc, [Value|Values]) :-
     (   atom(Head),
@@ -237,19 +235,22 @@ test(multi_fail, [fail]) :-
 %
 % *Hint*: the Prolog built-in integer(I) succeeds iff I is an integer.
 % add_to_plus_expr(_AddExprI, _PlusExpr) :- 'TODO'.
-add_to_plus_expr(Expr, Result) :-
-    (   atomic(Expr) -> Result = Expr  % Straight: If atomic, return it
-    ;   Expr = add(X, Y),
-        add_to_plus_expr(X, X1),
-        add_to_plus_expr(Y, Y1),
-        Result = X1 + Y1  % Straight
-    ;   Expr = +(X, Y),
-        add_to_plus_expr(X, X1),
-        add_to_plus_expr(Y, Y1),
-        Result = add(X1, Y1)  % Reverse
-    ).
+add_to_plus_expr(Expr, Expr) :-
+    integer(Expr).
+
+add_to_plus_expr(add(A, B), PlusExpr) :-
+    nonvar(A),nonvar(B),
+    add_to_plus_expr(A, XPlus),
+    add_to_plus_expr(B, YPlus),
+    PlusExpr = XPlus + YPlus.
+
+add_to_plus_expr(PlusExpr,A+B):-
+    nonvar(A),nonvar(B),
+    add_to_plus_expr(XPlus,A),
+    add_to_plus_expr(YPlus,B),
+    PlusExpr=add(XPlus,YPlus).
     
-:-begin_tests(add_to_plus_expr, [blocked('TODO')]).
+:-begin_tests(add_to_plus_expr).
 test(int, [nondet]) :-
     add_to_plus_expr(42, Z), Z = 42.
 test(add_2_3, [nondet]) :-
@@ -300,8 +301,6 @@ test(rev_add_1_add_2_add_3_add_4_5, [nondet]) :-
 % It should be possible to run this procedure with either one or
 % both arguments instantiated.
 % named_to_op_expr(_NamedExpr, _OpExpr) :- 'TODO'.
-
-
 named_to_op_expr(NamedExpr, NamedExpr) :-
     integer(NamedExpr).
 
@@ -586,6 +585,24 @@ test(mul_add_1_2_mul_3_4, [nondet]) :-
 % cannot directly use recursion or Prolog built-ins.
 
 % op_expr_to_prefix_tokens(_OpExpr, _PrefixTokens) :- 'TODO'.
+op_expr_to_prefix_tokens(I, [I]).
+
+op_expr_to_prefix_tokens(OpExpr, PrefixTokens) :-
+    named_to_op_expr(Z, OpExpr),
+    % write(Z),
+    convert_symbols(PrefixTokens, ConvertedTokens),
+    % write(ConvertedTokens),
+    named_expr_to_prefix_tokens(Z, ConvertedTokens).
+
+convert_symbols([], []).
+convert_symbols([+, X, Y | Rest], [add | PrefixTokens]) :-
+    convert_symbols([X, Y | Rest], PrefixTokens).
+convert_symbols([*, X, Y | Rest], [mul | PrefixTokens]) :-
+    convert_symbols([X, Y | Rest], PrefixTokens).
+convert_symbols([Number | Rest], [Number | PrefixTokens]) :-
+    number(Number),
+    convert_symbols(Rest, PrefixTokens).
+
 
 
 :-begin_tests(op_expr_to_prefix_tokens).
